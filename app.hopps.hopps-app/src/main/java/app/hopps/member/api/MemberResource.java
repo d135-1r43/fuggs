@@ -10,14 +10,16 @@ import io.quarkiverse.renarde.Controller;
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.security.Authenticated;
-import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.RestPath;
 import org.slf4j.Logger;
@@ -57,10 +59,19 @@ public class MemberResource extends Controller
 
 	@GET
 	@Path("")
-	public TemplateInstance index()
+	@Produces(MediaType.TEXT_HTML)
+	public TemplateInstance indexHtml()
 	{
 		List<Member> members = memberRepository.findAllOrderedByName();
 		return Templates.index(members);
+	}
+
+	@GET
+	@Path("")
+	@Produces(MediaType.APPLICATION_JSON)
+	public List<Member> index()
+	{
+		return memberRepository.findAllOrderedByName();
 	}
 
 	@GET
@@ -72,7 +83,8 @@ public class MemberResource extends Controller
 
 	@GET
 	@Path("/{id}")
-	public TemplateInstance detail(@RestPath Long id)
+	@Produces(MediaType.TEXT_HTML)
+	public TemplateInstance detailHtml(@RestPath Long id)
 	{
 		Member member = memberRepository.findByIdScoped(id);
 		if (member == null)
@@ -82,6 +94,19 @@ public class MemberResource extends Controller
 			return null;
 		}
 		return Templates.detail(member);
+	}
+
+	@GET
+	@Path("/{id}")
+	@Produces(MediaType.APPLICATION_JSON)
+	public Member detailJson(@RestPath Long id)
+	{
+		Member member = memberRepository.findByIdScoped(id);
+		if (member == null)
+		{
+			throw new NotFoundException();
+		}
+		return member;
 	}
 
 	@POST
@@ -129,7 +154,7 @@ public class MemberResource extends Controller
 			flash(FlashKeys.WARNING, "Mitglied erstellt, aber Keycloak-Synchronisation fehlgeschlagen");
 		}
 
-		redirect(MemberResource.class).detail(member.getId());
+		redirect(MemberResource.class).detailHtml(member.getId());
 	}
 
 	@POST
@@ -145,7 +170,7 @@ public class MemberResource extends Controller
 	{
 		if (validationFailed())
 		{
-			redirect(MemberResource.class).detail(id);
+			redirect(MemberResource.class).detailHtml(id);
 			return;
 		}
 
@@ -163,7 +188,7 @@ public class MemberResource extends Controller
 		member.setPhone(phone);
 
 		flash(FlashKeys.SUCCESS, "Mitglied aktualisiert");
-		redirect(MemberResource.class).detail(id);
+		redirect(MemberResource.class).detailHtml(id);
 	}
 
 	@POST
@@ -183,7 +208,7 @@ public class MemberResource extends Controller
 		if (!member.getResponsibleBommels().isEmpty())
 		{
 			flash(FlashKeys.ERROR, "Mitglied ist noch Bommelwart. Bitte zuerst die Zuweisungen entfernen.");
-			redirect(MemberResource.class).detail(id);
+			redirect(MemberResource.class).detailHtml(id);
 			return;
 		}
 

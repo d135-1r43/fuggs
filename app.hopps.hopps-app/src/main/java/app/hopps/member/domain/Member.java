@@ -2,6 +2,7 @@ package app.hopps.member.domain;
 
 import app.hopps.bommel.domain.Bommel;
 import app.hopps.organization.domain.Organization;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -34,6 +35,7 @@ public class Member extends PanacheEntity
 
 	@ManyToOne(optional = false)
 	@JoinColumn(name = "organization_id", nullable = false)
+	@JsonIgnore
 	private Organization organization;
 
 	@OneToMany(mappedBy = "responsibleMember", fetch = FetchType.LAZY)
